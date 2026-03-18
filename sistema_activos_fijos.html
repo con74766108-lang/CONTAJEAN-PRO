@@ -918,6 +918,14 @@ tbody tr:nth-child(even){background:#fff8f5}
             <label>Valor Residual (S/)</label>
             <input type="number" id="f-residual" placeholder="0.00" step="0.01" min="0" value="0">
           </div>
+          <div class="form-group" style="border:2px solid #ffcc00;border-radius:10px;padding:.75rem;background:#fffbe0">
+            <label style="color:#774400;display:flex;align-items:center;gap:.4rem">
+              ⏳ Dep. Acumulada Anterior (S/)
+              <span style="background:#ffdd00;color:#1a0800;font-size:.6rem;padding:.1rem .4rem;border-radius:4px;font-weight:800">ACTIVO USADO</span>
+            </label>
+            <input type="number" id="f-dep-acum-anterior" placeholder="0.00 — si es activo nuevo dejar en 0" step="0.01" min="0" value="0">
+            <div style="font-size:.72rem;color:#774400;margin-top:.3rem">💡 Llena esto si el activo ya tenía depreciación acumulada antes de ingresarlo al sistema (migración, compra de usado, etc.)</div>
+          </div>
           <div class="form-group">
             <label>Ubicación / Centro de Costo</label>
             <input type="text" id="f-ubicacion" placeholder="Ej: Almacén Principal">
@@ -1988,33 +1996,37 @@ function showTab(id) {
 function registrarActivo() {
   if(!puedeEditar()){toast('⚠️ Solo Lectura: sin permiso para registrar','warn');return;}
   if(!empresaActual){toast('⚠️ Primero selecciona una empresa','warn');return;}
-  const codigo = document.getElementById('f-codigo').value.trim();
-  const cuenta = document.getElementById('f-cuenta').value;
-  const desc = document.getElementById('f-desc').value.trim();
-  const marca = document.getElementById('f-marca').value.trim();
-  const modelo = document.getElementById('f-modelo').value.trim();
-  const serie = document.getElementById('f-serie').value.trim();
-  const fecha = document.getElementById('f-fecha').value;
-  const valor = parseFloat(document.getElementById('f-valor').value) || 0;
-  const metodo = modoActual === 'sun' ? 'lineal' : (document.getElementById('f-metodo').value || 'lineal');
-  const vida = parseInt(document.getElementById('f-vida').value) || 5;
+  const codigo    = document.getElementById('f-codigo').value.trim();
+  const cuenta    = document.getElementById('f-cuenta').value;
+  const desc      = document.getElementById('f-desc').value.trim();
+  const marca     = document.getElementById('f-marca').value.trim();
+  const modelo    = document.getElementById('f-modelo').value.trim();
+  const serie     = document.getElementById('f-serie').value.trim();
+  const fecha     = document.getElementById('f-fecha').value;
+  const valor     = parseFloat(document.getElementById('f-valor').value) || 0;
+  const metodo    = modoActual === 'sun' ? 'lineal' : (document.getElementById('f-metodo').value || 'lineal');
+  const vida      = parseInt(document.getElementById('f-vida').value) || 5;
   const tasaSunat = parseFloat(document.getElementById('f-tasa-sunat').value) || 10;
-  const residual = parseFloat(document.getElementById('f-residual').value) || 0;
-  const ubicacion = document.getElementById('f-ubicacion').value.trim();
-  const responsable = document.getElementById('f-responsable').value.trim();
+  const residual  = parseFloat(document.getElementById('f-residual').value) || 0;
+  const depAcumAnterior = parseFloat(document.getElementById('f-dep-acum-anterior').value) || 0;
+  const ubicacion  = document.getElementById('f-ubicacion').value.trim();
+  const responsable= document.getElementById('f-responsable').value.trim();
 
   if(!codigo || !cuenta || !desc || !fecha || valor <= 0) {
     toast('⚠️ Completa los campos obligatorios (código, cuenta, descripción, fecha, valor)', 'warn');
     return;
   }
+  if(depAcumAnterior > valor){
+    toast('⚠️ La dep. acumulada anterior no puede ser mayor al valor del activo','warn');
+    return;
+  }
 
-  activos.push({codigo, cuenta, desc, marca, modelo, serie, fecha, valor, metodo, vida, tasaSunat, residual, ubicacion, responsable, modo: modoActual, id: Date.now()});
+  activos.push({codigo, cuenta, desc, marca, modelo, serie, fecha, valor, metodo, vida, tasaSunat, residual, depAcumAnterior, ubicacion, responsable, modo: modoActual, id: Date.now()});
   save();
   limpiarFormulario();
   renderListaActivos();
   renderDashboard();
   toast('✅ Activo registrado correctamente');
-  // Auto-show depreciation for the new activo
   setTimeout(() => {
     showTab('depreciacion');
     const selDep = document.getElementById('sel-activo-dep');
@@ -2026,8 +2038,9 @@ function registrarActivo() {
 }
 
 function limpiarFormulario() {
-  ['f-codigo','f-desc','f-marca','f-modelo','f-serie','f-fecha','f-valor','f-vida','f-residual','f-ubicacion','f-responsable'].forEach(id => {
+  ['f-codigo','f-desc','f-marca','f-modelo','f-serie','f-fecha','f-valor','f-vida','f-residual','f-dep-acum-anterior','f-ubicacion','f-responsable'].forEach(id => {
     document.getElementById(id).value = '';
+  });
   });
   document.getElementById('f-cuenta').value = '';
   document.getElementById('f-metodo').value = 'lineal';
@@ -2077,17 +2090,13 @@ function renderListaActivos() {
 function renderDashboard() {
   const total = activos.length;
   const valorTotal = activos.reduce((s,a) => s + (parseFloat(a.valor)||0), 0);
-  let depTotal = 0;
-  activos.forEach(a => {
-    const sched = calcDepLineal(a);
-    depTotal += sched.reduce((s,r) => s + r.dep, 0);
-  });
-  const neto = valorTotal - depTotal;
+  const depTotal   = activos.reduce((s,a) => s + calcDepAcumTotal(a), 0);
+  const neto       = valorTotal - depTotal;
 
   document.getElementById('st-total').textContent = total;
   document.getElementById('st-valor').textContent = fmt(valorTotal);
-  document.getElementById('st-dep').textContent = fmt(depTotal);
-  document.getElementById('st-neto').textContent = fmt(neto);
+  document.getElementById('st-dep').textContent   = fmt(depTotal);
+  document.getElementById('st-neto').textContent  = fmt(neto);
 
   const wrap = document.getElementById('dashboard-table-wrap');
   if(!activos.length) {
@@ -2099,20 +2108,20 @@ function renderDashboard() {
     <th class="num">Valor (S/)</th><th class="num">Dep. Acum.</th><th class="num">Valor Neto</th><th>Estado</th>
   </tr></thead><tbody>`;
   activos.forEach(a => {
-    const sched = calcDepLineal(a);
-    const depAcum = sched.reduce((s,r) => s + r.dep, 0);
-    const neto = (parseFloat(a.valor)||0) - depAcum;
-    const pct = ((parseFloat(a.valor)||0) > 0) ? (depAcum/(parseFloat(a.valor)||0)*100) : 0;
-    const cat = CATEGORIAS[a.cuenta] || {nombre:a.cuenta, color:'#999'};
-    const estado = pct >= 100 ? '<span style="color:var(--coral);font-size:.75rem;font-weight:700">DEPRECIADO</span>' :
-                   pct >= 75 ? '<span style="color:var(--gold);font-size:.75rem;font-weight:700">AVANZADO</span>' :
-                   '<span style="color:var(--teal);font-size:.75rem;font-weight:700">ACTIVO</span>';
+    const depAcum = calcDepAcumTotal(a);
+    const neto    = calcValorNeto(a);
+    const pct     = ((parseFloat(a.valor)||0) > 0) ? (depAcum/(parseFloat(a.valor)||0)*100) : 0;
+    const cat     = CATEGORIAS[a.cuenta] || {nombre:a.cuenta, color:'#999'};
+    const tieneAnterior = (parseFloat(a.depAcumAnterior)||0) > 0;
+    const estado  = pct >= 100 ? '<span style="color:var(--coral);font-size:.75rem;font-weight:700">DEPRECIADO</span>' :
+                    pct >= 75  ? '<span style="color:var(--gold);font-size:.75rem;font-weight:700">AVANZADO</span>' :
+                    '<span style="color:var(--teal);font-size:.75rem;font-weight:700">ACTIVO</span>';
     html += `<tr>
-      <td><strong>${a.codigo}</strong></td>
+      <td><strong>${a.codigo}</strong>${tieneAnterior?'<span style="background:#fff8e0;border:1px solid #ffcc00;color:#774400;font-size:.6rem;padding:.1rem .3rem;border-radius:4px;margin-left:.3rem;font-weight:700">USADO</span>':''}</td>
       <td>${a.desc}</td>
       <td><span class="badge-cat" style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.nombre}</span></td>
       <td class="num">${fmtNum(a.valor)}</td>
-      <td class="num" style="color:var(--coral)">${fmtNum(depAcum)}</td>
+      <td class="num" style="color:var(--coral)">${fmtNum(depAcum)}${tieneAnterior?'<div style="font-size:.65rem;color:#cc6600">↑ incl. S/ '+fmtNum(a.depAcumAnterior)+' anterior</div>':''}</td>
       <td class="num" style="color:var(--teal)"><strong>${fmtNum(neto)}</strong></td>
       <td>${estado}<div class="progress-wrap" style="margin-top:.3rem"><div class="progress-bar" style="width:${Math.min(pct,100)}%"></div></div></td>
     </tr>`;
@@ -2125,19 +2134,43 @@ function renderDashboard() {
 // DEPRECIATION CALCULATIONS
 // ============================================================
 function calcDepLineal(activo) {
-  const costo = parseFloat(activo.valor) || 0;
+  const costo    = parseFloat(activo.valor) || 0;
   const residual = parseFloat(activo.residual) || 0;
-  const vida = parseInt(activo.vida) || 5;
+  const vida     = parseInt(activo.vida) || 5;
+  const depAcumAnterior = parseFloat(activo.depAcumAnterior) || 0;
   const depAnual = (costo - residual) / vida;
+
+  // Cuántos años ya transcurrieron según dep acumulada anterior
+  const añosYaDepreciados = depAnual > 0 ? Math.floor(depAcumAnterior / depAnual) : 0;
+  const vidaRestante = Math.max(vida - añosYaDepreciados, 0);
+
   const rows = [];
-  let depAcum = 0;
+  let depAcum = depAcumAnterior; // parte desde la dep anterior
   for(let i = 1; i <= vida; i++) {
-    const dep = depAnual;
-    depAcum += dep;
-    const vl = costo - depAcum;
-    rows.push({año: i, depAnual: dep, depAcum, vl: Math.max(vl, residual)});
+    // Solo mostrar los años restantes
+    if(i <= añosYaDepreciados){
+      // Años ya depreciadoss — los mostramos como "cerrados"
+      rows.push({año: i, depAnual: depAnual, depAcum: depAnual*i, vl: Math.max(costo - depAnual*i, residual), yaDepreciado: true});
+    } else {
+      const dep = Math.min(depAnual, costo - depAcum - residual);
+      if(dep <= 0) break;
+      depAcum += dep;
+      rows.push({año: i, depAnual: dep, depAcum, vl: Math.max(costo - depAcum, residual), yaDepreciado: false});
+    }
   }
   return rows;
+}
+
+// Función helper: dep acumulada TOTAL (incluyendo anterior)
+function calcDepAcumTotal(activo){
+  const rows = calcDepLineal(activo);
+  if(!rows.length) return 0;
+  return rows[rows.length-1].depAcum;
+}
+
+// Función helper: valor neto actual
+function calcValorNeto(activo){
+  return Math.max((parseFloat(activo.valor)||0) - calcDepAcumTotal(activo), 0);
 }
 
 function calcDepAcelerada(activo) {
@@ -3285,6 +3318,7 @@ function editarActivo(idx) {
   document.getElementById('f-vida').value = a.vida;
   document.getElementById('f-tasa-sunat').value = a.tasaSunat;
   document.getElementById('f-residual').value = a.residual||0;
+  document.getElementById('f-dep-acum-anterior').value = a.depAcumAnterior||0;
   document.getElementById('f-ubicacion').value = a.ubicacion||'';
   document.getElementById('f-responsable').value = a.responsable||'';
   setMode(a.modo||'nic');
