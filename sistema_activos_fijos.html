@@ -849,6 +849,7 @@ tbody tr:nth-child(even){background:#fff8f5}
       <div class="card-header">
         <div class="card-title">🗂️ Activos Registrados</div>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+          <span id="dash-periodo-badge" style="background:#fff8e0;border:2px solid #ffcc00;color:#774400;padding:.2rem .75rem;border-radius:20px;font-size:.72rem;font-weight:800">📅 Sin periodo</span>
           <button class="btn btn-primary btn-sm" onclick="showTab('registro')">➕ Nuevo Activo</button>
           <button class="btn btn-sm" style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff;font-weight:800" onclick="exportarMegaReporte()" title="Descarga Excel con todas las hojas">📊 Mega Reporte Excel</button>
           <button class="btn btn-sm" style="background:linear-gradient(135deg,#37474f,#546e7a);color:#fff;font-weight:800" onclick="exportarExcelSeccion('dashboard')">⬇️ Solo Dashboard</button>
@@ -2185,6 +2186,19 @@ function renderListaActivos() {
 // DASHBOARD
 // ============================================================
 function renderDashboard() {
+  // Actualizar badge de periodo
+  const pa = getPeriodos().find(p=>p.activo);
+  const badge = document.getElementById('dash-periodo-badge');
+  if(badge){
+    if(pa){
+      badge.textContent = '📅 '+pa.nombre+' ('+pa.inicio+' → '+pa.fin+')';
+      badge.style.background='#f0fff5'; badge.style.borderColor='#00aa44'; badge.style.color='#006622';
+    } else {
+      badge.textContent = '⚠️ Sin periodo activo'; 
+      badge.style.background='#fff0f0'; badge.style.borderColor='#ff4444'; badge.style.color='#cc0000';
+    }
+  }
+
   const total      = activos.length;
   const valorTotal = activos.reduce((s,a) => s + (parseFloat(a.valor)||0), 0);
   const depTotal   = activos.reduce((s,a) => s + calcDepAcumTotal(a), 0);
@@ -2260,99 +2274,150 @@ function renderDashboard() {
 }
 
 // ============================================================
-// DEPRECIATION CALCULATIONS
+// FECHA DE CORTE — usa el periodo activo, si no hay usa hoy
 // ============================================================
-function calcDepLineal(activo) {
-  const costo    = parseFloat(activo.valor) || 0;
-  const residual = parseFloat(activo.residual) || 0;
-  const vida     = parseInt(activo.vida) || 5;
+function getFechaCorte(){
+  const periodos = getPeriodos();
+  const pa = periodos.find(p => p.activo);
+  if(pa && pa.fin){
+    // Usa el último día del periodo activo
+    const d = new Date(pa.fin);
+    d.setHours(23,59,59);
+    return d;
+  }
+  return new Date(); // fallback: hoy
+}
+
+function getNombrePeriodoActivo(){
+  const periodos = getPeriodos();
+  const pa = periodos.find(p => p.activo);
+  return pa ? pa.nombre : 'Sin periodo';
+}
+
+function getAniosPeriodo(){
+  const periodos = getPeriodos();
+  const pa = periodos.find(p => p.activo);
+  if(!pa) return null;
+  return { inicio: new Date(pa.inicio), fin: new Date(pa.fin), nombre: pa.nombre };
+}
+
+// ============================================================
+// DEPRECIATION CALCULATIONS  — fecha corte = cierre periodo
+// ============================================================
+function calcDepLineal(activo, fechaCorte) {
+  const fc      = fechaCorte || getFechaCorte();
+  const costo   = parseFloat(activo.valor) || 0;
+  const residual= parseFloat(activo.residual) || 0;
+  const vida    = parseInt(activo.vida) || 5;
   const depAcumAnterior = parseFloat(activo.depAcumAnterior) || 0;
-  const depAnual = (costo - residual) / vida;
-  const depMensual = depAnual / 12;
+  const depAnual  = (costo - residual) / vida;
+  const depMensual= depAnual / 12;
 
-  // Calcular meses transcurridos desde adquisición hasta hoy
-  const hoy = new Date();
-  const fechaAdq = activo.fecha ? new Date(activo.fecha) : hoy;
-  const mesesTranscurridos = (hoy.getFullYear() - fechaAdq.getFullYear()) * 12
-    + (hoy.getMonth() - fechaAdq.getMonth());
-  const mesesTotal = vida * 12;
-  const mesesEfectivos = Math.min(Math.max(mesesTranscurridos, 0), mesesTotal);
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : fc;
+  // Meses transcurridos desde adquisición hasta fecha de corte
+  let mesesTranscurridos = (fc.getFullYear() - fechaAdq.getFullYear()) * 12
+    + (fc.getMonth() - fechaAdq.getMonth());
+  // Si el día de adquisición es posterior al día de corte en el mismo mes, restar 1 mes
+  if(fechaAdq.getDate() > fc.getDate() && mesesTranscurridos > 0) mesesTranscurridos--;
+  const mesesTotal    = vida * 12;
+  const mesesEfectivos= Math.min(Math.max(mesesTranscurridos, 0), mesesTotal);
 
-  // Depreciación acumulada real = anterior + la generada desde adquisición
-  const depGenerada = depMensual * mesesEfectivos;
-  const depAcumReal = Math.min(depAcumAnterior + depGenerada, costo - residual);
-
-  // Generar tabla anual para mostrar en reportes
   const rows = [];
   let depAcum = depAcumAnterior;
   for(let i = 1; i <= vida; i++) {
-    // Meses correspondientes a este año de vida
     const mesInicio = (i - 1) * 12;
-    const mesFin    = i * 12;
-    // Cuántos meses de este año ya transcurrieron
     const mesesEsteAnio = Math.min(Math.max(mesesEfectivos - mesInicio, 0), 12);
     const depEsteAnio   = depMensual * mesesEsteAnio;
-    if(depEsteAnio <= 0 && depAcum <= depAcumAnterior && i > 1) {
-      // Año futuro — mostrar proyección completa
+    if(depEsteAnio <= 0 && i > 1 && depAcum >= (depAcumAnterior + depMensual)){
+      // Años futuros — proyección
       const dep = Math.min(depAnual, costo - depAcum - residual);
       if(dep <= 0) break;
       depAcum += dep;
-      rows.push({año: i, depAnual: dep, depMensual, meses: 12, depAcum, vl: Math.max(costo - depAcum, residual), proyectado: true});
+      rows.push({año:i, depAnual:dep, depMensual, meses:12, depAcum, vl:Math.max(costo-depAcum,residual), proyectado:true});
     } else {
       const dep = Math.min(depEsteAnio, costo - depAcum - residual);
       if(dep < 0) break;
       depAcum += dep;
-      rows.push({año: i, depAnual: dep, depMensual, meses: mesesEsteAnio, depAcum, vl: Math.max(costo - depAcum, residual), proyectado: false});
-      if(mesesEsteAnio < 12) break; // Último año parcial — el resto es futuro
+      rows.push({año:i, depAnual:dep, depMensual, meses:mesesEsteAnio, depAcum, vl:Math.max(costo-depAcum,residual), proyectado:false});
+      if(mesesEsteAnio < 12 && mesesEfectivos < mesesTotal) break;
     }
   }
   return rows;
 }
 
-// Función helper: dep acumulada TOTAL real (incluyendo anterior + meses transcurridos)
-function calcDepAcumTotal(activo){
-  const costo    = parseFloat(activo.valor) || 0;
-  const residual = parseFloat(activo.residual) || 0;
-  const vida     = parseInt(activo.vida) || 5;
+// Dep acumulada al cierre del periodo activo
+function calcDepAcumTotal(activo, fechaCorte){
+  const fc      = fechaCorte || getFechaCorte();
+  const costo   = parseFloat(activo.valor) || 0;
+  const residual= parseFloat(activo.residual) || 0;
+  const vida    = parseInt(activo.vida) || 5;
   const depAcumAnterior = parseFloat(activo.depAcumAnterior) || 0;
-  const depAnual   = (costo - residual) / vida;
-  const depMensual = depAnual / 12;
-  const hoy = new Date();
-  const fechaAdq = activo.fecha ? new Date(activo.fecha) : hoy;
-  const mesesTranscurridos = (hoy.getFullYear() - fechaAdq.getFullYear()) * 12
-    + (hoy.getMonth() - fechaAdq.getMonth());
-  const mesesTotal = vida * 12;
-  const mesesEfectivos = Math.min(Math.max(mesesTranscurridos, 0), mesesTotal);
-  const depGenerada = depMensual * mesesEfectivos;
-  return Math.min(depAcumAnterior + depGenerada, costo - residual);
+  const depMensual= (costo - residual) / vida / 12;
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : fc;
+  let mesesTranscurridos = (fc.getFullYear() - fechaAdq.getFullYear()) * 12
+    + (fc.getMonth() - fechaAdq.getMonth());
+  if(fechaAdq.getDate() > fc.getDate() && mesesTranscurridos > 0) mesesTranscurridos--;
+  const mesesEfectivos = Math.min(Math.max(mesesTranscurridos, 0), vida * 12);
+  return Math.min(depAcumAnterior + depMensual * mesesEfectivos, costo - residual);
 }
 
-// Función helper: valor neto actual
-function calcValorNeto(activo){
-  return Math.max((parseFloat(activo.valor)||0) - calcDepAcumTotal(activo), 0);
+// Valor neto al cierre del periodo activo
+function calcValorNeto(activo, fechaCorte){
+  return Math.max((parseFloat(activo.valor)||0) - calcDepAcumTotal(activo, fechaCorte), 0);
 }
 
-// Dep del ejercicio actual (solo meses del año en curso)
+// Dep solo del ejercicio del periodo activo
 function calcDepEjercicio(activo){
-  const costo    = parseFloat(activo.valor) || 0;
-  const residual = parseFloat(activo.residual) || 0;
-  const vida     = parseInt(activo.vida) || 5;
-  const depAnual   = (costo - residual) / vida;
-  const depMensual = depAnual / 12;
-  const hoy = new Date();
-  const anioActual = hoy.getFullYear();
-  const fechaAdq = activo.fecha ? new Date(activo.fecha) : hoy;
-  // Meses depreciados en el año actual
-  const mesInicioEjercicio = fechaAdq.getFullYear() === anioActual ? fechaAdq.getMonth() : 0;
-  const mesFinEjercicio = hoy.getMonth();
-  const mesesEjercicio = fechaAdq.getFullYear() <= anioActual
-    ? Math.max(mesFinEjercicio - (fechaAdq.getFullYear() === anioActual ? fechaAdq.getMonth() : 0) + (fechaAdq.getFullYear() === anioActual ? 0 : 1), 0)
-    : 0;
-  return Math.min(depMensual * mesesEjercicio, costo - residual);
+  const pa = getAniosPeriodo();
+  if(!pa) return 0;
+  const costo   = parseFloat(activo.valor) || 0;
+  const residual= parseFloat(activo.residual) || 0;
+  const vida    = parseInt(activo.vida) || 5;
+  const depMensual = (costo - residual) / vida / 12;
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : pa.inicio;
+
+  // Fecha inicio efectiva del ejercicio para este activo
+  const inicioEfectivo = fechaAdq > pa.inicio ? fechaAdq : pa.inicio;
+  // Fecha fin del periodo
+  const finPeriodo = pa.fin;
+
+  if(inicioEfectivo > finPeriodo) return 0; // adquirido después del periodo
+
+  let meses = (finPeriodo.getFullYear() - inicioEfectivo.getFullYear()) * 12
+    + (finPeriodo.getMonth() - inicioEfectivo.getMonth());
+  if(inicioEfectivo.getDate() > finPeriodo.getDate() && meses > 0) meses--;
+  meses = Math.max(meses, 0);
+  return Math.min(depMensual * meses, costo - residual);
+}
+
+// Vida útil restante al cierre del periodo activo
+function calcVidaRestante(activo){
+  const fc   = getFechaCorte();
+  const vida = parseInt(activo.vida) || 5;
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : fc;
+  let mesesTranscurridos = (fc.getFullYear() - fechaAdq.getFullYear()) * 12
+    + (fc.getMonth() - fechaAdq.getMonth());
+  if(fechaAdq.getDate() > fc.getDate() && mesesTranscurridos > 0) mesesTranscurridos--;
+  mesesTranscurridos = Math.max(mesesTranscurridos, 0);
+  const mesesTotal    = vida * 12;
+  const mesesRestantes= Math.max(mesesTotal - mesesTranscurridos, 0);
+  const aniosRestantes= Math.floor(mesesRestantes / 12);
+  const mesesSobrantes= mesesRestantes % 12;
+  const pctUsado      = Math.min((mesesTranscurridos / mesesTotal) * 100, 100);
+  return { mesesRestantes, aniosRestantes, mesesSobrantes, pctUsado, mesesTranscurridos, mesesTotal };
+}
+
+// Texto legible de vida restante
+function textoVidaRestante(activo){
+  const v = calcVidaRestante(activo);
+  if(v.mesesRestantes <= 0) return '<span style="color:#cc0000;font-weight:800">⚠️ DEPRECIADO</span>';
+  let txt = '';
+  if(v.aniosRestantes > 0) txt += v.aniosRestantes + ' año' + (v.aniosRestantes>1?'s':'');
+  if(v.mesesSobrantes > 0) txt += (txt?' y ':'')+v.mesesSobrantes+' mes'+(v.mesesSobrantes>1?'es':'');
+  return txt || '&lt; 1 mes';
 }
 
 function calcDepAcelerada(activo) {
-  // Suma de dígitos años
   const costo = parseFloat(activo.valor) || 0;
   const residual = parseFloat(activo.residual) || 0;
   const vida = parseInt(activo.vida) || 5;
@@ -2368,50 +2433,33 @@ function calcDepAcelerada(activo) {
   return rows;
 }
 
-function calcDepSUNAT(activo) {
+function calcDepSUNAT(activo, fechaCorte) {
+  const fc = fechaCorte || getFechaCorte();
   const costo = parseFloat(activo.valor) || 0;
   const tasa = parseFloat(activo.tasaSunat) / 100;
-  const vidaSunat = Math.ceil(1/tasa);
+  if(!tasa) return [];
+  const vidaSunat = Math.ceil(1 / tasa);
   const depAnual = costo * tasa;
+  const depMensual = depAnual / 12;
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : fc;
+  let mesesTranscurridos = (fc.getFullYear() - fechaAdq.getFullYear()) * 12
+    + (fc.getMonth() - fechaAdq.getMonth());
+  if(fechaAdq.getDate() > fc.getDate() && mesesTranscurridos > 0) mesesTranscurridos--;
+  const mesesTotal    = vidaSunat * 12;
+  const mesesEfectivos= Math.min(Math.max(mesesTranscurridos, 0), mesesTotal);
+
   const rows = [];
   let depAcum = 0;
   for(let i = 1; i <= vidaSunat; i++) {
-    const dep = Math.min(depAnual, costo - depAcum);
+    const mesInicio = (i - 1) * 12;
+    const mesesEsteAnio = Math.min(Math.max(mesesEfectivos - mesInicio, 0), 12);
+    const dep = Math.min(depMensual * mesesEsteAnio, costo - depAcum);
     depAcum += dep;
-    rows.push({año: i, dep, depAcum, vl: Math.max(costo - depAcum, 0)});
+    rows.push({año: i, dep, depAcum, vl: Math.max(costo - depAcum, 0), meses: mesesEsteAnio});
+    if(mesesEsteAnio < 12 && mesesEfectivos < mesesTotal) break;
   }
   return rows;
 }
-
-// Vida útil restante en meses y años
-function calcVidaRestante(activo){
-  const vida = parseInt(activo.vida) || 5;
-  const hoy = new Date();
-  const fechaAdq = activo.fecha ? new Date(activo.fecha) : hoy;
-  const mesesTranscurridos = Math.max(
-    (hoy.getFullYear() - fechaAdq.getFullYear()) * 12 + (hoy.getMonth() - fechaAdq.getMonth()), 0
-  );
-  const mesesTotal = vida * 12;
-  const mesesRestantes = Math.max(mesesTotal - mesesTranscurridos, 0);
-  const aniosRestantes = Math.floor(mesesRestantes / 12);
-  const mesesSobrantes = mesesRestantes % 12;
-  const pctUsado = Math.min((mesesTranscurridos / mesesTotal) * 100, 100);
-  return { mesesRestantes, aniosRestantes, mesesSobrantes, pctUsado, mesesTranscurridos, mesesTotal };
-}
-
-// Texto legible de vida restante
-function textoVidaRestante(activo){
-  const v = calcVidaRestante(activo);
-  if(v.mesesRestantes <= 0) return '<span style="color:#cc0000;font-weight:800">⚠️ DEPRECIADO</span>';
-  let txt = '';
-  if(v.aniosRestantes > 0) txt += v.aniosRestantes + ' año' + (v.aniosRestantes>1?'s':'');
-  if(v.mesesSobrantes > 0) txt += (txt?' y ':'')+v.mesesSobrantes+' mes'+(v.mesesSobrantes>1?'es':'');
-  return txt || '&lt; 1 mes';
-}
-
-// ============================================================
-// RENDER DEPRECIACIÓN RESUMEN
-// ============================================================
 function renderResumenDep() {
   const wrap = document.getElementById('resumen-dep-wrap');
   if(!activos.length){ wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>No hay activos.</p></div>'; return; }
