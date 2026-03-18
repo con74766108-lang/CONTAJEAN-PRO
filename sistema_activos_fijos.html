@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contajean Activos Fijos</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 :root {
@@ -2777,7 +2777,7 @@ function renderFormato71() {
 // EXCEL EXPORT — FORMATO 7.1
 // ============================================================
 function descargarFormato71(periodo, ruc, razon) {
-  const wb = XLSX.utils.book_new();
+  const wb = XLSXStyle.utils.book_new();
 
   // === HOJA 1: FORMATO 7.1 ===
   const wsData = [];
@@ -2812,10 +2812,10 @@ function descargarFormato71(periodo, ruc, razon) {
   wsData.push([]);
   wsData.push(['','','','','','TOTALES', totValor,0,0,0,0,totValor,0,totValor,'','','','','',0,totDep,0,0,totDep,0,totDep]);
 
-  const ws1 = XLSX.utils.aoa_to_sheet(wsData);
+  const ws1 = XLSXStyle.utils.aoa_to_sheet(wsData);
   ws1['!cols'] = Array(26).fill({wch:14});
   ws1['!cols'][2] = {wch:30};
-  XLSX.utils.book_append_sheet(wb, ws1, 'F 7.1 Det bs AF');
+  XLSXStyle.utils.book_append_sheet(wb, ws1, 'F 7.1 Det bs AF');
 
   // === HOJA 2: CUADRO DE DEPRECIACIÓN NIC vs SUNAT ===
   const ws2Data = [];
@@ -2838,9 +2838,9 @@ function descargarFormato71(periodo, ruc, razon) {
       nicAnual, sunAnual, nicAcum, vNeto, nicAnual - sunAnual
     ]);
   });
-  const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+  const ws2 = XLSXStyle.utils.aoa_to_sheet(ws2Data);
   ws2['!cols'] = [{wch:12},{wch:30},{wch:10},{wch:18},{wch:16},{wch:14},{wch:14},{wch:16},{wch:18},{wch:16},{wch:14},{wch:16}];
-  XLSX.utils.book_append_sheet(wb, ws2, 'Depreciación NIC vs SUNAT');
+  XLSXStyle.utils.book_append_sheet(wb, ws2, 'Depreciación NIC vs SUNAT');
 
   // === HOJA 3: DETALLE POR ACTIVO ===
   const ws3Data = [];
@@ -2859,9 +2859,9 @@ function descargarFormato71(periodo, ruc, razon) {
     }
     ws3Data.push([]);
   });
-  const ws3 = XLSX.utils.aoa_to_sheet(ws3Data);
+  const ws3 = XLSXStyle.utils.aoa_to_sheet(ws3Data);
   ws3['!cols'] = [{wch:8},{wch:20},{wch:22},{wch:20},{wch:22},{wch:22},{wch:22},{wch:16}];
-  XLSX.utils.book_append_sheet(wb, ws3, 'Detalle Dep. por Activo');
+  XLSXStyle.utils.book_append_sheet(wb, ws3, 'Detalle Dep. por Activo');
 
   // === HOJA 4: ANÁLISIS NIC 16 ===
   const ws4Data = [];
@@ -2871,9 +2871,9 @@ function descargarFormato71(periodo, ruc, razon) {
   NIC_RATES.forEach(r => {
     ws4Data.push([r.tipo, r.nic, r.vida_nic, r.sunat, '']);
   });
-  const ws4 = XLSX.utils.aoa_to_sheet(ws4Data);
+  const ws4 = XLSXStyle.utils.aoa_to_sheet(ws4Data);
   ws4['!cols'] = [{wch:40},{wch:16},{wch:18},{wch:14},{wch:14}];
-  XLSX.utils.book_append_sheet(wb, ws4, 'NIC 16 Tasas');
+  XLSXStyle.utils.book_append_sheet(wb, ws4, 'NIC 16 Tasas');
 
 
   // === HOJA 5: NIC 12 IMPUESTO DIFERIDO ===
@@ -2900,11 +2900,11 @@ function descargarFormato71(periodo, ruc, razon) {
     }
     ws5Data.push([]);
   });
-  const ws5 = XLSX.utils.aoa_to_sheet(ws5Data);
+  const ws5 = XLSXStyle.utils.aoa_to_sheet(ws5Data);
   ws5['!cols'] = [{wch:12},{wch:28},{wch:6},{wch:20},{wch:22},{wch:18},{wch:18},{wch:20},{wch:18},{wch:20},{wch:18}];
-  XLSX.utils.book_append_sheet(wb, ws5, 'NIC 12 Impuesto Diferido');
+  XLSXStyle.utils.book_append_sheet(wb, ws5, 'NIC 12 Impuesto Diferido');
 
-  XLSX.writeFile(wb, `Formato_71_Activos_Fijos_${periodo}.xlsx`);
+  XLSXStyle.writeFile(wb, `Formato_71_Activos_Fijos_${periodo}.xlsx`);
   toast('✅ Archivo Excel descargado correctamente');
 }
 
@@ -2914,7 +2914,7 @@ function descargarFormato71(periodo, ruc, razon) {
 // ════════════════════════════════════════════════════════════
 
 // Detectar qué librería usar (XLSXStyle si está disponible)
-function getXLSX(){ return (typeof XLSXStyle !== 'undefined') ? XLSXStyle : XLSX; }
+function getXLSX(){ return XLSXStyle; }
 
 function rgb(hex){ return hex.replace('#','').toUpperCase(); }
 
@@ -3228,7 +3228,7 @@ function exportarExcelSeccion(seccion){
 // ============================================================
 function exportarExcel() {
   if(!activos.length) { toast('⚠️ No hay activos para exportar','warn'); return; }
-  const ws = XLSX.utils.json_to_sheet(activos.map(a => ({
+  const ws = XLSXStyle.utils.json_to_sheet(activos.map(a => ({
     'Código': a.codigo,
     'Cuenta': a.cuenta,
     'Descripción': a.desc,
@@ -3244,9 +3244,9 @@ function exportarExcel() {
     'Ubicación': a.ubicacion,
     'Responsable': a.responsable
   })));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Activos Fijos');
-  XLSX.writeFile(wb, 'Lista_Activos_Fijos.xlsx');
+  const wb = XLSXStyle.utils.book_new();
+  XLSXStyle.utils.book_append_sheet(wb, ws, 'Activos Fijos');
+  XLSXStyle.writeFile(wb, 'Lista_Activos_Fijos.xlsx');
   toast('✅ Excel exportado correctamente');
 }
 
@@ -3430,7 +3430,7 @@ function renderDiferido() {
 
 function exportarDiferidoExcel() {
   const tir = 0.295;
-  const wb = XLSX.utils.book_new();
+  const wb = XLSXStyle.utils.book_new();
   const rows = [['REPORTE NIC 12 — IMPUESTO DIFERIDO'],['Tasa IR: 29.5%'],[],
     ['CÓDIGO','DESCRIPCIÓN','AÑO','DEP. NIC (S/)','DEP. SUNAT (S/)','Δ DEP (S/)','VL NIC (S/)','VN SUNAT (S/)','DIF. BASE (S/)','IMP. DIFERIDO (S/)','TIPO']];
   activos.forEach(a=>{
@@ -3446,10 +3446,10 @@ function exportarDiferidoExcel() {
     }
     rows.push([]);
   });
-  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const ws=XLSXStyle.utils.aoa_to_sheet(rows);
   ws['!cols']=[{wch:12},{wch:28},{wch:6},{wch:16},{wch:18},{wch:14},{wch:16},{wch:18},{wch:16},{wch:20},{wch:18}];
-  XLSX.utils.book_append_sheet(wb,ws,'NIC 12 Impuesto Diferido');
-  XLSX.writeFile(wb,'Impuesto_Diferido_NIC12.xlsx');
+  XLSXStyle.utils.book_append_sheet(wb,ws,'NIC 12 Impuesto Diferido');
+  XLSXStyle.writeFile(wb,'Impuesto_Diferido_NIC12.xlsx');
   toast('✅ Reporte NIC 12 exportado');
 }
 
