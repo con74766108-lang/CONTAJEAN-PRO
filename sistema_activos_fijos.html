@@ -2141,14 +2141,14 @@ function calcDepLineal(activo) {
   const depAnual = (costo - residual) / vida;
 
   // Cuántos años ya transcurrieron según dep acumulada anterior
-  const añosYaDepreciados = depAnual > 0 ? Math.floor(depAcumAnterior / depAnual) : 0;
-  const vidaRestante = Math.max(vida - añosYaDepreciados, 0);
+  const aniosYaDepreciados = depAnual > 0 ? Math.floor(depAcumAnterior / depAnual) : 0;
+  const vidaRestante = Math.max(vida - aniosYaDepreciados, 0);
 
   const rows = [];
   let depAcum = depAcumAnterior; // parte desde la dep anterior
   for(let i = 1; i <= vida; i++) {
     // Solo mostrar los años restantes
-    if(i <= añosYaDepreciados){
+    if(i <= aniosYaDepreciados){
       // Años ya depreciadoss — los mostramos como "cerrados"
       rows.push({año: i, depAnual: depAnual, depAcum: depAnual*i, vl: Math.max(costo - depAnual*i, residual), yaDepreciado: true});
     } else {
