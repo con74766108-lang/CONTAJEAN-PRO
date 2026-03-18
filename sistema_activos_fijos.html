@@ -878,16 +878,64 @@ tbody tr:nth-child(even){background:#fff8f5}
           </div>
           <div class="form-group">
             <label>Cuenta Contable</label>
-            <select id="f-cuenta">
-              <option value="">Seleccionar...</option>
-              <option value="33111">33111 – Terrenos</option>
-              <option value="33121">33121 – Edificios y Construcciones</option>
-              <option value="33311">33311 – Maquinaria y Equipo</option>
-              <option value="33411">33411 – Vehículos</option>
-              <option value="33511">33511 – Muebles y Enseres</option>
-              <option value="33611">33611 – Equipos Diversos</option>
-              <option value="33711">33711 – Herramientas</option>
-              <option value="33911">33911 – Otros</option>
+            <select id="f-cuenta" onchange="autocompletarCuenta(this.value)">
+              <option value="">Seleccionar cuenta PCGE...</option>
+              <optgroup label="── 331 TERRENOS ──">
+                <option value="33111">33111 – Terrenos (Costo)</option>
+                <option value="33112">33112 – Terrenos (Revaluación)</option>
+              </optgroup>
+              <optgroup label="── 332 EDIFICACIONES ──">
+                <option value="33211">33211 – Edif. Administrativas (Costo)</option>
+                <option value="33212">33212 – Edif. Administrativas (Revaluación)</option>
+                <option value="33221">33221 – Almacenes (Costo)</option>
+                <option value="33231">33231 – Edif. para Producción (Costo)</option>
+                <option value="33241">33241 – Edif. Residenciales (Costo)</option>
+                <option value="33251">33251 – Otras Edificaciones (Costo)</option>
+              </optgroup>
+              <optgroup label="── 333 MAQUINARIA Y EQUIPO DE EXPLOTACIÓN ──">
+                <option value="33311">33311 – Maquinaria y Equipo de Explotación (Costo)</option>
+                <option value="33312">33312 – Maquinaria y Equipo de Explotación (Revaluación)</option>
+              </optgroup>
+              <optgroup label="── 334 UNIDADES DE TRANSPORTE ──">
+                <option value="33411">33411 – Vehículos Motorizados (Costo)</option>
+                <option value="33412">33412 – Vehículos Motorizados (Revaluación)</option>
+                <option value="33421">33421 – Vehículos no Motorizados (Costo)</option>
+              </optgroup>
+              <optgroup label="── 335 MUEBLES Y ENSERES ──">
+                <option value="33511">33511 – Muebles y Enseres (Costo)</option>
+                <option value="33512">33512 – Muebles y Enseres (Revaluación)</option>
+              </optgroup>
+              <optgroup label="── 336 EQUIPOS DIVERSOS ──">
+                <option value="33611">33611 – Equipos de Cómputo y Comunicación (Costo)</option>
+                <option value="33612">33612 – Equipos de Cómputo y Comunicación (Revaluación)</option>
+                <option value="33621">33621 – Equipos de Oficina (Costo)</option>
+                <option value="33631">33631 – Equipos de Electrónicos (Costo)</option>
+                <option value="33641">33641 – Equipos de Seguridad (Costo)</option>
+                <option value="33691">33691 – Otros Equipos Diversos (Costo)</option>
+              </optgroup>
+              <optgroup label="── 337 HERRAMIENTAS Y UNIDADES DE REEMPLAZO ──">
+                <option value="33711">33711 – Herramientas (Costo)</option>
+                <option value="33721">33721 – Unidades de Reemplazo (Costo)</option>
+              </optgroup>
+              <optgroup label="── 338 UNIDADES POR RECIBIR ──">
+                <option value="33811">33811 – Unidades por Recibir</option>
+              </optgroup>
+              <optgroup label="── 339 OBRAS EN CURSO ──">
+                <option value="33911">33911 – Construcciones en Curso (Costo)</option>
+                <option value="33921">33921 – Instalaciones en Curso (Costo)</option>
+              </optgroup>
+              <optgroup label="── 330 PLANTA PRODUCTORA ──">
+                <option value="33011">33011 – Plantas en Producción (Costo)</option>
+                <option value="33021">33021 – Plantas en Desarrollo (Costo)</option>
+              </optgroup>
+              <optgroup label="── 34 INTANGIBLES ──">
+                <option value="34111">34111 – Concesiones (Costo)</option>
+                <option value="34121">34121 – Derechos (Costo)</option>
+                <option value="34131">34131 – Marcas y Patentes (Costo)</option>
+                <option value="34141">34141 – Programas de Cómputo / Software (Costo)</option>
+                <option value="34151">34151 – Fórmulas y Diseños (Costo)</option>
+                <option value="34191">34191 – Otros Intangibles (Costo)</option>
+              </optgroup>
             </select>
           </div>
           <div class="form-group full">
@@ -1911,15 +1959,65 @@ function puedeEditar(){
 
 
 const CATEGORIAS = {
-  '33111': {nombre:'Terrenos', color:'#22c55e'},
-  '33121': {nombre:'Edificios', color:'#3b82f6'},
-  '33311': {nombre:'Maquinaria', color:'#f59e0b'},
-  '33411': {nombre:'Vehículos', color:'#ef4444'},
-  '33511': {nombre:'Muebles', color:'#8b5cf6'},
-  '33611': {nombre:'Equipos', color:'#06b6d4'},
-  '33711': {nombre:'Herramientas', color:'#f97316'},
-  '33911': {nombre:'Otros', color:'#6b7280'}
+  // 331 TERRENOS
+  '33111': {nombre:'331 Terrenos (Costo)',              color:'#16a34a', sunat:0,   vida:0},
+  '33112': {nombre:'331 Terrenos (Revaluación)',        color:'#16a34a', sunat:0,   vida:0},
+  // 332 EDIFICACIONES
+  '33211': {nombre:'332 Edif. Administrativas',         color:'#2563eb', sunat:5,   vida:20},
+  '33212': {nombre:'332 Edif. Adm. (Revaluación)',      color:'#2563eb', sunat:5,   vida:20},
+  '33221': {nombre:'332 Almacenes',                     color:'#1d4ed8', sunat:5,   vida:20},
+  '33231': {nombre:'332 Edif. para Producción',         color:'#1e40af', sunat:5,   vida:20},
+  '33241': {nombre:'332 Edif. Residenciales',           color:'#1e3a8a', sunat:5,   vida:20},
+  '33251': {nombre:'332 Otras Edificaciones',           color:'#172554', sunat:5,   vida:20},
+  // 333 MAQUINARIA Y EQUIPO
+  '33311': {nombre:'333 Maquinaria y Equipo Explot.',   color:'#d97706', sunat:10,  vida:10},
+  '33312': {nombre:'333 Maquinaria y Eq. (Revalúo)',    color:'#d97706', sunat:10,  vida:10},
+  // 334 UNIDADES DE TRANSPORTE
+  '33411': {nombre:'334 Vehículos Motorizados',         color:'#dc2626', sunat:20,  vida:5},
+  '33412': {nombre:'334 Vehículos (Revaluación)',       color:'#dc2626', sunat:20,  vida:5},
+  '33421': {nombre:'334 Vehículos no Motorizados',      color:'#b91c1c', sunat:20,  vida:5},
+  // 335 MUEBLES Y ENSERES
+  '33511': {nombre:'335 Muebles y Enseres',             color:'#7c3aed', sunat:10,  vida:10},
+  '33512': {nombre:'335 Muebles y Enseres (Revalúo)',   color:'#7c3aed', sunat:10,  vida:10},
+  // 336 EQUIPOS DIVERSOS
+  '33611': {nombre:'336 Equipos de Cómputo y Comun.',   color:'#0891b2', sunat:25,  vida:4},
+  '33612': {nombre:'336 Equipos Cómputo (Revalúo)',     color:'#0891b2', sunat:25,  vida:4},
+  '33621': {nombre:'336 Equipos de Oficina',            color:'#0e7490', sunat:10,  vida:10},
+  '33631': {nombre:'336 Equipos Electrónicos',          color:'#155e75', sunat:25,  vida:4},
+  '33641': {nombre:'336 Equipos de Seguridad',          color:'#164e63', sunat:10,  vida:10},
+  '33691': {nombre:'336 Otros Equipos Diversos',        color:'#06b6d4', sunat:10,  vida:10},
+  // 337 HERRAMIENTAS
+  '33711': {nombre:'337 Herramientas',                  color:'#ea580c', sunat:20,  vida:5},
+  '33721': {nombre:'337 Unidades de Reemplazo',         color:'#c2410c', sunat:20,  vida:5},
+  // 338 UNIDADES POR RECIBIR
+  '33811': {nombre:'338 Unidades por Recibir',          color:'#78716c', sunat:10,  vida:10},
+  // 339 OBRAS EN CURSO
+  '33911': {nombre:'339 Construcciones en Curso',       color:'#57534e', sunat:0,   vida:0},
+  '33921': {nombre:'339 Instalaciones en Curso',        color:'#44403c', sunat:0,   vida:0},
+  // 330 PLANTA PRODUCTORA
+  '33011': {nombre:'330 Plantas en Producción',         color:'#15803d', sunat:20,  vida:5},
+  '33021': {nombre:'330 Plantas en Desarrollo',         color:'#166534', sunat:20,  vida:5},
+  // 34 INTANGIBLES
+  '34111': {nombre:'341 Concesiones',                   color:'#9333ea', sunat:10,  vida:10},
+  '34121': {nombre:'341 Derechos',                      color:'#7e22ce', sunat:10,  vida:10},
+  '34131': {nombre:'341 Marcas y Patentes',             color:'#6b21a8', sunat:10,  vida:10},
+  '34141': {nombre:'341 Software / Programas',          color:'#581c87', sunat:25,  vida:4},
+  '34151': {nombre:'341 Fórmulas y Diseños',            color:'#4a044e', sunat:10,  vida:10},
+  '34191': {nombre:'341 Otros Intangibles',             color:'#701a75', sunat:10,  vida:10},
 };
+
+// Al seleccionar cuenta PCGE → autocompletar tasa SUNAT y vida útil NIC
+function autocompletarCuenta(codigo){
+  const cat = CATEGORIAS[codigo];
+  if(!cat) return;
+  if(cat.sunat > 0) document.getElementById('f-tasa-sunat').value = cat.sunat;
+  if(cat.vida > 0)  document.getElementById('f-vida').value = cat.vida;
+  if(cat.sunat === 0){
+    toast('ℹ️ '+cat.nombre+': No sujeto a depreciación','warn');
+  } else {
+    toast('✅ Autocargado: Tasa SUNAT '+cat.sunat+'% · Vida útil '+cat.vida+' años');
+  }
+}
 
 const NIC_RATES = [
   {tipo:'Terrenos', nic:'No se deprecia', sunat:'–', vida_nic:'–'},
@@ -2087,7 +2185,7 @@ function renderListaActivos() {
 // DASHBOARD
 // ============================================================
 function renderDashboard() {
-  const total = activos.length;
+  const total      = activos.length;
   const valorTotal = activos.reduce((s,a) => s + (parseFloat(a.valor)||0), 0);
   const depTotal   = activos.reduce((s,a) => s + calcDepAcumTotal(a), 0);
   const neto       = valorTotal - depTotal;
@@ -2098,33 +2196,65 @@ function renderDashboard() {
   document.getElementById('st-neto').textContent  = fmt(neto);
 
   const wrap = document.getElementById('dashboard-table-wrap');
-  if(!activos.length) {
+  if(!activos.length){
     wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><p>No hay activos registrados aún.</p></div>';
     return;
   }
+
   let html = `<div class="table-wrap"><table><thead><tr>
     <th>Código</th><th>Descripción</th><th>Categoría</th>
-    <th class="num">Valor (S/)</th><th class="num">Dep. Acum.</th><th class="num">Valor Neto</th><th>Estado</th>
+    <th class="num">Valor (S/)</th>
+    <th class="num">Dep. Acum. Ant.</th>
+    <th class="num">Dep. Acum. Total</th>
+    <th class="num">Valor Neto</th>
+    <th>Vida Restante</th>
+    <th>Estado</th>
   </tr></thead><tbody>`;
+
   activos.forEach(a => {
-    const depAcum = calcDepAcumTotal(a);
-    const neto    = calcValorNeto(a);
-    const pct     = ((parseFloat(a.valor)||0) > 0) ? (depAcum/(parseFloat(a.valor)||0)*100) : 0;
-    const cat     = CATEGORIAS[a.cuenta] || {nombre:a.cuenta, color:'#999'};
-    const tieneAnterior = (parseFloat(a.depAcumAnterior)||0) > 0;
-    const estado  = pct >= 100 ? '<span style="color:var(--coral);font-size:.75rem;font-weight:700">DEPRECIADO</span>' :
-                    pct >= 75  ? '<span style="color:var(--gold);font-size:.75rem;font-weight:700">AVANZADO</span>' :
-                    '<span style="color:var(--teal);font-size:.75rem;font-weight:700">ACTIVO</span>';
+    const depAcum    = calcDepAcumTotal(a);
+    const depAnt     = parseFloat(a.depAcumAnterior) || 0;
+    const vn         = calcValorNeto(a);
+    const vr         = calcVidaRestante(a);
+    const pct        = vr.pctUsado;
+    const cat        = CATEGORIAS[a.cuenta] || {nombre:a.cuenta, color:'#999'};
+    const tieneAnt   = depAnt > 0;
+
+    // Color barra progreso
+    const barColor = pct >= 100 ? '#cc0000' : pct >= 75 ? '#ff8800' : '#00aa44';
+    const estadoLabel = pct >= 100
+      ? '<span style="color:#cc0000;font-weight:800;font-size:.75rem">⚠️ DEPRECIADO</span>'
+      : pct >= 75
+        ? '<span style="color:#ff8800;font-weight:800;font-size:.75rem">🔶 AVANZADO</span>'
+        : '<span style="color:#00aa44;font-weight:800;font-size:.75rem">✅ ACTIVO</span>';
+
     html += `<tr>
-      <td><strong>${a.codigo}</strong>${tieneAnterior?'<span style="background:#fff8e0;border:1px solid #ffcc00;color:#774400;font-size:.6rem;padding:.1rem .3rem;border-radius:4px;margin-left:.3rem;font-weight:700">USADO</span>':''}</td>
+      <td>
+        <strong style="color:#cc0000">${a.codigo}</strong>
+        ${tieneAnt ? '<span style="background:#fff8e0;border:1px solid #ffcc00;color:#774400;font-size:.6rem;padding:.1rem .3rem;border-radius:4px;margin-left:.3rem;font-weight:800">USADO</span>' : ''}
+      </td>
       <td>${a.desc}</td>
       <td><span class="badge-cat" style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.nombre}</span></td>
       <td class="num">${fmtNum(a.valor)}</td>
-      <td class="num" style="color:var(--coral)">${fmtNum(depAcum)}${tieneAnterior?'<div style="font-size:.65rem;color:#cc6600">↑ incl. S/ '+fmtNum(a.depAcumAnterior)+' anterior</div>':''}</td>
-      <td class="num" style="color:var(--teal)"><strong>${fmtNum(neto)}</strong></td>
-      <td>${estado}<div class="progress-wrap" style="margin-top:.3rem"><div class="progress-bar" style="width:${Math.min(pct,100)}%"></div></div></td>
+      <td class="num" style="color:#cc6600">
+        ${tieneAnt ? fmtNum(depAnt) : '<span style="color:#aaa;font-size:.75rem">—</span>'}
+      </td>
+      <td class="num" style="color:#cc0000">
+        <strong>${fmtNum(depAcum)}</strong>
+        <div style="font-size:.65rem;color:#884422">${vr.mesesTranscurridos} mes${vr.mesesTranscurridos!==1?'es':''} deprec.</div>
+      </td>
+      <td class="num" style="color:#006622"><strong>${fmtNum(vn)}</strong></td>
+      <td>
+        <div style="font-size:.78rem;font-weight:700;color:#1a0800;margin-bottom:.3rem">${textoVidaRestante(a)}</div>
+        <div style="background:#ffe0d0;border-radius:4px;height:7px;overflow:hidden;min-width:80px">
+          <div style="height:100%;border-radius:4px;background:${barColor};width:${Math.min(pct,100).toFixed(1)}%;transition:width .5s"></div>
+        </div>
+        <div style="font-size:.65rem;color:#884422;margin-top:.2rem">${pct.toFixed(1)}% usado</div>
+      </td>
+      <td>${estadoLabel}</td>
     </tr>`;
   });
+
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 }
@@ -2138,38 +2268,87 @@ function calcDepLineal(activo) {
   const vida     = parseInt(activo.vida) || 5;
   const depAcumAnterior = parseFloat(activo.depAcumAnterior) || 0;
   const depAnual = (costo - residual) / vida;
+  const depMensual = depAnual / 12;
 
-  // Cuántos años ya transcurrieron según dep acumulada anterior
-  const aniosYaDepreciados = depAnual > 0 ? Math.floor(depAcumAnterior / depAnual) : 0;
-  const vidaRestante = Math.max(vida - aniosYaDepreciados, 0);
+  // Calcular meses transcurridos desde adquisición hasta hoy
+  const hoy = new Date();
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : hoy;
+  const mesesTranscurridos = (hoy.getFullYear() - fechaAdq.getFullYear()) * 12
+    + (hoy.getMonth() - fechaAdq.getMonth());
+  const mesesTotal = vida * 12;
+  const mesesEfectivos = Math.min(Math.max(mesesTranscurridos, 0), mesesTotal);
 
+  // Depreciación acumulada real = anterior + la generada desde adquisición
+  const depGenerada = depMensual * mesesEfectivos;
+  const depAcumReal = Math.min(depAcumAnterior + depGenerada, costo - residual);
+
+  // Generar tabla anual para mostrar en reportes
   const rows = [];
-  let depAcum = depAcumAnterior; // parte desde la dep anterior
+  let depAcum = depAcumAnterior;
   for(let i = 1; i <= vida; i++) {
-    // Solo mostrar los años restantes
-    if(i <= aniosYaDepreciados){
-      // Años ya depreciadoss — los mostramos como "cerrados"
-      rows.push({año: i, depAnual: depAnual, depAcum: depAnual*i, vl: Math.max(costo - depAnual*i, residual), yaDepreciado: true});
-    } else {
+    // Meses correspondientes a este año de vida
+    const mesInicio = (i - 1) * 12;
+    const mesFin    = i * 12;
+    // Cuántos meses de este año ya transcurrieron
+    const mesesEsteAnio = Math.min(Math.max(mesesEfectivos - mesInicio, 0), 12);
+    const depEsteAnio   = depMensual * mesesEsteAnio;
+    if(depEsteAnio <= 0 && depAcum <= depAcumAnterior && i > 1) {
+      // Año futuro — mostrar proyección completa
       const dep = Math.min(depAnual, costo - depAcum - residual);
       if(dep <= 0) break;
       depAcum += dep;
-      rows.push({año: i, depAnual: dep, depAcum, vl: Math.max(costo - depAcum, residual), yaDepreciado: false});
+      rows.push({año: i, depAnual: dep, depMensual, meses: 12, depAcum, vl: Math.max(costo - depAcum, residual), proyectado: true});
+    } else {
+      const dep = Math.min(depEsteAnio, costo - depAcum - residual);
+      if(dep < 0) break;
+      depAcum += dep;
+      rows.push({año: i, depAnual: dep, depMensual, meses: mesesEsteAnio, depAcum, vl: Math.max(costo - depAcum, residual), proyectado: false});
+      if(mesesEsteAnio < 12) break; // Último año parcial — el resto es futuro
     }
   }
   return rows;
 }
 
-// Función helper: dep acumulada TOTAL (incluyendo anterior)
+// Función helper: dep acumulada TOTAL real (incluyendo anterior + meses transcurridos)
 function calcDepAcumTotal(activo){
-  const rows = calcDepLineal(activo);
-  if(!rows.length) return 0;
-  return rows[rows.length-1].depAcum;
+  const costo    = parseFloat(activo.valor) || 0;
+  const residual = parseFloat(activo.residual) || 0;
+  const vida     = parseInt(activo.vida) || 5;
+  const depAcumAnterior = parseFloat(activo.depAcumAnterior) || 0;
+  const depAnual   = (costo - residual) / vida;
+  const depMensual = depAnual / 12;
+  const hoy = new Date();
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : hoy;
+  const mesesTranscurridos = (hoy.getFullYear() - fechaAdq.getFullYear()) * 12
+    + (hoy.getMonth() - fechaAdq.getMonth());
+  const mesesTotal = vida * 12;
+  const mesesEfectivos = Math.min(Math.max(mesesTranscurridos, 0), mesesTotal);
+  const depGenerada = depMensual * mesesEfectivos;
+  return Math.min(depAcumAnterior + depGenerada, costo - residual);
 }
 
 // Función helper: valor neto actual
 function calcValorNeto(activo){
   return Math.max((parseFloat(activo.valor)||0) - calcDepAcumTotal(activo), 0);
+}
+
+// Dep del ejercicio actual (solo meses del año en curso)
+function calcDepEjercicio(activo){
+  const costo    = parseFloat(activo.valor) || 0;
+  const residual = parseFloat(activo.residual) || 0;
+  const vida     = parseInt(activo.vida) || 5;
+  const depAnual   = (costo - residual) / vida;
+  const depMensual = depAnual / 12;
+  const hoy = new Date();
+  const anioActual = hoy.getFullYear();
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : hoy;
+  // Meses depreciados en el año actual
+  const mesInicioEjercicio = fechaAdq.getFullYear() === anioActual ? fechaAdq.getMonth() : 0;
+  const mesFinEjercicio = hoy.getMonth();
+  const mesesEjercicio = fechaAdq.getFullYear() <= anioActual
+    ? Math.max(mesFinEjercicio - (fechaAdq.getFullYear() === anioActual ? fechaAdq.getMonth() : 0) + (fechaAdq.getFullYear() === anioActual ? 0 : 1), 0)
+    : 0;
+  return Math.min(depMensual * mesesEjercicio, costo - residual);
 }
 
 function calcDepAcelerada(activo) {
@@ -2204,33 +2383,72 @@ function calcDepSUNAT(activo) {
   return rows;
 }
 
+// Vida útil restante en meses y años
+function calcVidaRestante(activo){
+  const vida = parseInt(activo.vida) || 5;
+  const hoy = new Date();
+  const fechaAdq = activo.fecha ? new Date(activo.fecha) : hoy;
+  const mesesTranscurridos = Math.max(
+    (hoy.getFullYear() - fechaAdq.getFullYear()) * 12 + (hoy.getMonth() - fechaAdq.getMonth()), 0
+  );
+  const mesesTotal = vida * 12;
+  const mesesRestantes = Math.max(mesesTotal - mesesTranscurridos, 0);
+  const aniosRestantes = Math.floor(mesesRestantes / 12);
+  const mesesSobrantes = mesesRestantes % 12;
+  const pctUsado = Math.min((mesesTranscurridos / mesesTotal) * 100, 100);
+  return { mesesRestantes, aniosRestantes, mesesSobrantes, pctUsado, mesesTranscurridos, mesesTotal };
+}
+
+// Texto legible de vida restante
+function textoVidaRestante(activo){
+  const v = calcVidaRestante(activo);
+  if(v.mesesRestantes <= 0) return '<span style="color:#cc0000;font-weight:800">⚠️ DEPRECIADO</span>';
+  let txt = '';
+  if(v.aniosRestantes > 0) txt += v.aniosRestantes + ' año' + (v.aniosRestantes>1?'s':'');
+  if(v.mesesSobrantes > 0) txt += (txt?' y ':'')+v.mesesSobrantes+' mes'+(v.mesesSobrantes>1?'es':'');
+  return txt || '&lt; 1 mes';
+}
+
 // ============================================================
-// RENDER DEPRECIACIÓN
+// RENDER DEPRECIACIÓN RESUMEN
 // ============================================================
 function renderResumenDep() {
   const wrap = document.getElementById('resumen-dep-wrap');
-  if(!activos.length) { wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>No hay activos.</p></div>'; return; }
+  if(!activos.length){ wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>No hay activos.</p></div>'; return; }
   let html = `<table><thead><tr>
     <th>Código</th><th>Descripción</th><th>Método</th>
-    <th class="num">Costo (S/)</th><th class="num">Dep. Anual NIC</th>
-    <th class="num">Dep. Anual SUNAT</th><th class="num">Dep. Acum. NIC</th><th class="num">V. Neto NIC</th>
+    <th class="num">Costo (S/)</th>
+    <th class="num">Dep. Ant. (S/)</th>
+    <th class="num">Dep. Acum. (S/)</th>
+    <th class="num">Dep./Mes (S/)</th>
+    <th class="num">V. Neto (S/)</th>
+    <th>Vida Restante</th>
+    <th>% Usado</th>
   </tr></thead><tbody>`;
   activos.forEach(a => {
-    const nicSched = calcDepLineal(a);
-    const sunSched = calcDepSUNAT(a);
-    const nicAnual = nicSched.length ? nicSched[0].depAnual : 0;
-    const sunAnual = sunSched.length ? sunSched[0].dep : 0;
-    const nicAcum = nicSched.reduce((s,r)=>s+r.depAnual,0);
-    const vNeto = (parseFloat(a.valor)||0) - nicAcum;
+    const depAcum  = calcDepAcumTotal(a);
+    const depAnt   = parseFloat(a.depAcumAnterior)||0;
+    const vNeto    = calcValorNeto(a);
+    const vr       = calcVidaRestante(a);
+    const vida     = parseInt(a.vida)||5;
+    const depMens  = (parseFloat(a.valor)||0) / vida / 12;
+    const barColor = vr.pctUsado>=100?'#cc0000':vr.pctUsado>=75?'#ff8800':'#00aa44';
     html += `<tr>
-      <td><strong>${a.codigo}</strong></td>
+      <td><strong style="color:#cc0000">${a.codigo}</strong></td>
       <td>${a.desc}</td>
       <td>${a.metodo==='lineal'?'Línea Recta':a.metodo==='acelerada'?'Acelerada':'Ud. Prod.'}</td>
       <td class="num">${fmtNum(a.valor)}</td>
-      <td class="num" style="color:var(--gold)">${fmtNum(nicAnual)}</td>
-      <td class="num" style="color:var(--coral)">${fmtNum(sunAnual)}</td>
-      <td class="num">${fmtNum(nicAcum)}</td>
-      <td class="num" style="color:var(--teal)"><strong>${fmtNum(vNeto)}</strong></td>
+      <td class="num" style="color:#cc6600">${depAnt>0?fmtNum(depAnt):'<span style="color:#ccc">—</span>'}</td>
+      <td class="num" style="color:#cc0000"><strong>${fmtNum(depAcum)}</strong><div style="font-size:.65rem;color:#884422">${vr.mesesTranscurridos} mes${vr.mesesTranscurridos!==1?'es':''}</div></td>
+      <td class="num" style="color:#884422">${fmtNum(depMens)}</td>
+      <td class="num" style="color:#006622"><strong>${fmtNum(vNeto)}</strong></td>
+      <td style="min-width:130px">
+        <div style="font-size:.78rem;font-weight:700;color:#1a0800">${textoVidaRestante(a)}</div>
+        <div style="background:#ffe0d0;border-radius:3px;height:5px;margin-top:.3rem;overflow:hidden">
+          <div style="height:100%;background:${barColor};width:${Math.min(vr.pctUsado,100).toFixed(1)}%"></div>
+        </div>
+      </td>
+      <td class="num" style="font-weight:800;color:${vr.pctUsado>=100?'#cc0000':vr.pctUsado>=75?'#ff8800':'#006622'}">${vr.pctUsado.toFixed(1)}%</td>
     </tr>`;
   });
   html += '</tbody></table>';
